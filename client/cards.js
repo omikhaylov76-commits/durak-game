@@ -47,9 +47,27 @@ export function faceSVG(card) {
   } else if (card.rank === 14) {
     center += `<circle cx="${W / 2}" cy="${H / 2}" r="118" fill="none" stroke="${col}" stroke-opacity=".22" stroke-width="3"/>${suitSVG(card.suit, col, W / 2, H / 2, 168, 0)}`;
   } else {
-    center += `<rect x="58" y="86" width="${W - 116}" height="${H - 172}" rx="10" fill="#EFE5D2" stroke="${col}" stroke-width="3"/>
-      <text x="${W / 2}" y="${card.rank === 11 || card.rank === 12 || card.rank === 13 ? H / 2 + 16 : H / 2 + 16}" font-family="Georgia,serif" font-weight="700" font-size="118" fill="${col}" text-anchor="middle">${lbl}</text>
-      ${suitSVG(card.suit, col, W / 2, H / 2 + 92, 44, 0)}`;
+    // Court cards: Jack, Queen, King — ornate portrait frames
+    const frameColor = col;
+    const bgColor = '#FDF8F0';
+    const crownY = 180, faceY = 210, bodyY = 300;
+    const crown = card.rank === 13 ? `<path d="M80 175 L95 145 L110 165 L130 140 L150 165 L165 145 L180 175 Z" fill="#D4A843" stroke="#8B6914" stroke-width="2"/>` : '';
+    const face = `<circle cx="142" cy="${faceY}" r="38" fill="#E8D5B7" stroke="${col}" stroke-width="2"/>
+      <circle cx="130" cy="${faceY-8}" r="5" fill="#3A2A1A"/><circle cx="154" cy="${faceY-8}" r="5" fill="#3A2A1A"/>
+      <path d="M135 ${faceY+8} Q142 ${faceY+18} 149 ${faceY+8}" fill="none" stroke="#C97A6A" stroke-width="2"/>
+      <ellipse cx="142" cy="${faceY+22}" rx="14" ry="10" fill="#D4A080" opacity="0.5"/>`;
+    const body = card.rank === 13 ? `<path d="M102 ${bodyY} L112 ${bodyY} L115 420 L95 420 Z" fill="${col}" opacity="0.3"/>
+      <path d="M172 ${bodyY} L182 ${bodyY} L185 420 L165 420 Z" fill="${col}" opacity="0.3"/>`
+      : card.rank === 12 ? `<path d="M92 ${bodyY} L122 ${bodyY} L115 420 L95 420 Z" fill="${col}" opacity="0.3"/>
+      <path d="M162 ${bodyY} L192 ${bodyY} L185 420 L165 420 Z" fill="${col}" opacity="0.3"/>`
+      : `<path d="M97 ${bodyY} L117 ${bodyY} L115 420 L95 420 Z" fill="${col}" opacity="0.3"/>
+      <path d="M167 ${bodyY} L187 ${bodyY} L185 420 L165 420 Z" fill="${col}" opacity="0.3"/>`;
+    const labelY = H / 2 + 16;
+    center += `<rect x="48" y="76" width="${W-96}" height="${H-152}" rx="12" fill="${bgColor}" stroke="${frameColor}" stroke-width="3"/>
+      <rect x="55" y="83" width="${W-110}" height="${H-166}" rx="8" fill="none" stroke="${frameColor}" stroke-width="1" stroke-opacity="0.4"/>
+      ${crown}${face}${body}
+      <text x="${W/2}" y="${labelY}" font-family="Georgia,serif" font-weight="700" font-size="52" fill="${col}" text-anchor="middle">${lbl}</text>
+      ${suitSVG(card.suit, col, W/2, H/2 + 54, 34, 0)}`;
   }
 
   const idx = `<g fill="${col}" font-family="Rubik,Arial,sans-serif" font-weight="900"><text x="16" y="58" font-size="${fs}">${lbl}</text>${suitSVG(card.suit, col, 16 + idxW / 2, 90, 32, 0)}</g>`;

@@ -161,7 +161,7 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const now = () => performance.now();
 
 // ---- Audio (Web Audio API) ----
-const AU = { ctx: null, cardGain: null, noise: null,
+const AU = { ctx: null, cardGain: null, noise: null, musicGain: null, musicNodes: [],
   init() {
     if (this.ctx) return;
     try {
@@ -169,6 +169,9 @@ const AU = { ctx: null, cardGain: null, noise: null,
       this.cardGain = C.createGain();
       this.cardGain.gain.value = 0.7;
       this.cardGain.connect(C.destination);
+      this.musicGain = C.createGain();
+      this.musicGain.gain.value = 0;
+      this.musicGain.connect(C.destination);
       const len = C.sampleRate * 2, b = C.createBuffer(1, len, C.sampleRate), d = b.getChannelData(0);
       for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
       this.noise = b;
@@ -202,6 +205,40 @@ const AU = { ctx: null, cardGain: null, noise: null,
       else if (name === 'win') { tone(523, 523, .15, .3); setTimeout(() => tone(659, 659, .2, .3), 150); setTimeout(() => tone(784, 784, .35, .3), 320); }
       else if (name === 'lose') { tone(300, 200, .3, .3); setTimeout(() => tone(220, 150, .45, .3), 260); }
     } catch (_) {}
+  },
+  startMusic() {
+    if (!this.ctx || this.musicNodes.length) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    try {
+      const C = this.ctx, g = this.musicGain;
+      const notes = [130.81, 146.83, 164.81, 196.00, 220.00, 261.63, 293.66, 329.63];
+      const addOsc = (freq, detune, type, vol, pan) => {
+        const o = C.createOscillator(); o.type = type;
+        o.frequency.value = freq; o.detune.value = detune;
+        const p = C.createStereoPanner(); p.pan.value = pan;
+        const vg = C.createGain(); vg.gain.value = vol;
+        o.connect(p); p.connect(vg); vg.connect(g); o.start();
+        this.musicNodes.push({ osc: o, gain: vg });
+      };
+      // Pad layers — warm chord
+      const root = notes[Math.floor(Math.random() * 4)];
+      addOsc(root, 0, 'sine', 0.08, 0);
+      addOsc(root * 1.5, 3, 'triangle', 0.05, -0.4);
+      addOsc(root * 2, -3, 'sine', 0.04, 0.4);
+      addOsc(root / 2, 5, 'triangle', 0.06, 0.2);
+      // Gentle LFO on gain
+      g.gain.setTargetAtTime(0.12, C.currentTime, 2);
+      const lfo = C.createOscillator(); lfo.type = 'sine'; lfo.frequency.value = 0.08;
+      const lfoG = C.createGain(); lfoG.gain.value = 0.02;
+      lfo.connect(lfoG); lfoG.connect(g.gain);
+      lfo.start();
+      this.musicNodes.push({ osc: lfo, gain: lfoG });
+    } catch (_) {}
+  },
+  stopMusic() {
+    for (const n of this.musicNodes) { try { n.osc.stop(); } catch (_) {} }
+    this.musicNodes = [];
+    if (this.musicGain) this.musicGain.gain.setTargetAtTime(0, this.ctx?.currentTime || 0, 1);
   }
 };
 
@@ -247,7 +284,10 @@ function handleMessage(msg) {
       break;
     case 'state':
       applyState(msg.state);
-      if (!$('#lobby').classList.contains('hidden')) $('#lobby').classList.add('hidden');
+      if (!$('#lobby').classList.contains('hidden')) {
+        $('#lobby').classList.add('hidden');
+        AU.startMusic();
+      }
       break;
     case 'emoji':
       showReaction(msg.e, msg.seat, msg.name);
@@ -577,6 +617,7 @@ function showOver(fool) {
   btn.textContent = 'В лобби';
   btn.onclick = () => {
     overlay.remove();
+    AU.stopMusic();
     send({ t: 'leave' });
     NET.mode = 'off';
     $('#lobby').classList.remove('hidden');
