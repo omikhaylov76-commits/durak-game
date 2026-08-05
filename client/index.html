@@ -502,7 +502,12 @@ function botReaction(){ if(!G.players.length||Math.random()>0.4)return;
 var pushRAF=0;
 function netPush(){ if(NET.mode!=='host'||!NET.started)return;if(pushRAF)return;
  pushRAF=requestAnimationFrame(function(){pushRAF=0;
-  NET.send({t:'state',state:projectFor(0)});});}
+  // Send state projected for each guest
+  for(var i=1;i<G.players.length;i++){
+   if(!G.players[i].bot){
+    NET.send({t:'state',seat:i,state:projectFor(i)});
+   }
+  }});}
 function projectFor(s){var n=G.players.length;var rot=function(i){return i<0?0:(i-s+n)%n;};
  var players=[];
  for(var i=0;i<n;i++){var src=G.players[(s+i)%n],q={name:src.name,out:src.out};
@@ -560,7 +565,7 @@ function netMessage(m){
   else if(m.t==='emoji'){var n=G.players.length;if(n)showReaction(m.e,(m.seat+n)%n,G.players[(m.seat+n)%n]?G.players[(m.seat+n)%n].name:'');AU.play('emo');}
   else if(m.t==='emo'){var n=G.players.length;if(n)showReaction(m.e,(m.seat+n)%n,G.players[(m.seat+n)%n]?G.players[(m.seat+n)%n].name:'');AU.play('emo');}
  }else if(NET.mode==='guest'){
-  if(m.t==='state')applyState(m.state);
+  if(m.t==='state'&&m.seat===NET.seat)applyState(m.state);
   else if(m.t==='emoji'){var n2=G.players.length;if(n2)showReaction(m.e,(m.seat-NET.seat+n2)%n2,G.players[(m.seat-NET.seat+n2)%n2]?G.players[(m.seat-NET.seat+n2)%n2].name:'');AU.play('emo');}
   else if(m.t==='emo'){var n2=G.players.length;if(n2)showReaction(m.e,(m.seat-NET.seat+n2)%n2,G.players[(m.seat-NET.seat+n2)%n2]?G.players[(m.seat-NET.seat+n2)%n2].name:'');AU.play('emo');}
   else if(m.t==='start'){}

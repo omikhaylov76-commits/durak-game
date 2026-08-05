@@ -116,7 +116,8 @@ wss.on('connection', (ws) => {
         if (info.roomCode) {
           const room = rooms.get(info.roomCode);
           if (room) {
-            const relayMsg = { ...msg, seat: info.seat };
+            // Only add seat if not already present in the message
+            const relayMsg = msg.seat !== undefined ? { ...msg } : { ...msg, seat: info.seat };
             for (const c of room.clients) {
               if (c !== ws) send(c, relayMsg);
             }
