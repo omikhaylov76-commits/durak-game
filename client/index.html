@@ -531,7 +531,8 @@ function applyState(st){G.players=st.players;G.table=st.table;G.discard=st.disca
  G.running=st.over===undefined;
  if(!$('#lobby').classList.contains('hidden'))$('#lobby').classList.add('hidden');
  computeLayout();sync();
- if(st.over!==undefined)showOver(st.over);}
+ if(st.over!==undefined)showOver(st.over);
+ if(NET.mode==='guest')toast('Ход · карт:'+(G.players.length?G.players[0].hand.length:0)+' · '+G.trumpSuit);}
 function netMessage(m){
  if(m.t==='connected'){NET.id=m.id;return;}
  if(m.t==='room'){
@@ -566,6 +567,7 @@ function netMessage(m){
   else if(m.t==='emo'){var n=G.players.length;if(n)showReaction(m.e,(m.seat+n)%n,G.players[(m.seat+n)%n]?G.players[(m.seat+n)%n].name:'');AU.play('emo');}
  }else if(NET.mode==='guest'){
   if(m.t==='state'&&m.seat===NET.seat)applyState(m.state);
+   else if(m.t==='state')toast('Чужой ход (место '+m.seat+', я '+NET.seat+')');
   else if(m.t==='emoji'){var n2=G.players.length;if(n2)showReaction(m.e,(m.seat-NET.seat+n2)%n2,G.players[(m.seat-NET.seat+n2)%n2]?G.players[(m.seat-NET.seat+n2)%n2].name:'');AU.play('emo');}
   else if(m.t==='emo'){var n2=G.players.length;if(n2)showReaction(m.e,(m.seat-NET.seat+n2)%n2,G.players[(m.seat-NET.seat+n2)%n2]?G.players[(m.seat-NET.seat+n2)%n2].name:'');AU.play('emo');}
   else if(m.t==='start'){}
