@@ -11,5 +11,8 @@
   },
   "dependencies": {
     "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@railway/cli": "^5.30.4"
   }
 }
