@@ -3,6 +3,7 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import crypto from 'node:crypto';
 import { GameRoom } from './game-room.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -198,10 +199,9 @@ function leaveRoom(ws, info) {
 
 function generateCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
-  const buf = new Uint8Array(6);
-  crypto.getRandomValues(buf);
   let code = '';
-  for (let i = 0; i < 6; i++) code += chars[buf[i] % chars.length];
+  const bytes = crypto.randomBytes(6);
+  for (let i = 0; i < 6; i++) code += chars[bytes[i] % chars.length];
   return code;
 }
 
