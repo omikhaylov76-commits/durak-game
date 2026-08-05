@@ -120,6 +120,8 @@ html,body{height:100%;overflow:hidden;background:#24352c;font-family:Rubik,syste
   <div id="deckzone"><div id="deckstack"></div><div id="deckcount">0</div><div id="trumpchip"></div></div>
   <div id="hud"><div id="status">Подключение…</div><div id="timer"><span>30</span></div></div>
   <div id="toasts"></div><div id="actions"></div>
+  <button id="emoBtn" style="position:absolute;z-index:31;right:12px;bottom:12px;background:rgba(20,26,20,.78);border:1px solid rgba(176,141,87,.4);color:#F2E7D0;border-radius:12px;padding:8px 14px;font-weight:700;font-size:20px;cursor:pointer;font-family:Rubik,system-ui">😊</button>
+  <div id="emoPanel" class="hidden" style="position:absolute;right:12px;bottom:64px;z-index:40;display:grid;grid-template-columns:repeat(4,54px);gap:6px;background:rgba(20,26,20,.9);border:1px solid rgba(176,141,87,.4);border-radius:18px;padding:10px;backdrop-filter:blur(6px);box-shadow:0 16px 40px -12px rgba(0,0,0,.8)"></div>
 </div>
 <div id="lobby" class="overlay">
   <div class="panel">
@@ -506,13 +508,21 @@ function showOver(fool) {
   const panel = document.createElement('div');
   panel.className = 'panel';
   panel.style.textAlign = 'center';
+  const title = document.createElement('h2');
+  const sub = document.createElement('p');
+  sub.className = 'sub';
   if (fool === undefined || fool === null) {
-    panel.innerHTML = '<h2>Ничья!</h2><p class="sub">все вышли одновременно</p>';
+    title.textContent = 'Ничья!';
+    sub.textContent = 'все вышли одновременно';
   } else if (fool === 0) {
-    panel.innerHTML = '<h2>Вы остались в дураках</h2><p class="sub">ну, с кем не бывает…</p>';
+    title.textContent = 'Вы остались в дураках';
+    sub.textContent = 'ну, с кем не бывает…';
   } else {
-    panel.innerHTML = `<h2>Дурак — ${G.players[fool]?.name || '?'}</h2><p class="sub">Вы вышли из партии сухим!</p>`;
+    title.textContent = `Дурак — ${G.players[fool]?.name || '?'}`;
+    sub.textContent = 'Вы вышли из партии сухим!';
   }
+  panel.appendChild(title);
+  panel.appendChild(sub);
   const btn = document.createElement('button');
   btn.className = 'btn big';
   btn.textContent = 'В лобби';
@@ -560,7 +570,7 @@ function showReaction(e, seatIdx, name) {
 // ---- lobby ----
 $('#startBtn').onclick = () => {
   NET.mode = 'off';
-  $('#lobby').classList.add('hidden');
+  $('#status').textContent = 'Запуск игры…';
   send({ t: 'create', name: $('#myName').value || 'Вы', count: optV.count, deck: optV.deck, throwAll: optV.throwAll, first5: $('#optFirst5').checked });
   setTimeout(() => send({ t: 'start' }), 200);
 };
@@ -584,6 +594,7 @@ $('#netGoBtn').onclick = () => {
 };
 
 $('#netStartBtn').onclick = () => {
+  $('#status').textContent = 'Запуск игры…';
   send({ t: 'start' });
 };
 
@@ -597,6 +608,22 @@ const optV = { count: 3, deck: 36, throwAll: true };
 $('#optCount').querySelectorAll('button').forEach(b => b.onclick = () => { optV.count = +b.dataset.v; });
 $('#optDeck').querySelectorAll('button').forEach(b => b.onclick = () => { optV.deck = +b.dataset.v; });
 $('#optThrow').querySelectorAll('button').forEach(b => b.onclick = () => { optV.throwAll = b.dataset.v === 'all'; });
+
+// Emoji panel
+const EMOJIS = ['😂','😡','🤔','😱','👍','👋','😴','🎉'];
+const ep = $('#emoPanel');
+EMOJIS.forEach(e => {
+  const b = document.createElement('button');
+  b.textContent = e;
+  b.style.cssText = 'font-size:30px;line-height:1.2;background:rgba(255,255,255,.06);border:1px solid rgba(176,141,87,.25);border-radius:12px;padding:7px 4px;cursor:pointer;transition:transform .12s;font-family:Rubik,system-ui';
+  b.onclick = () => { send({ t: 'emoji', e }); ep.classList.add('hidden'); };
+  ep.appendChild(b);
+});
+$('#emoBtn').onclick = (ev) => { ev.stopPropagation(); ep.classList.toggle('hidden'); };
+document.addEventListener('click', (ev) => {
+  if (!ep.classList.contains('hidden') && !ev.target.closest('#emoPanel') && !ev.target.closest('#emoBtn'))
+    ep.classList.add('hidden');
+});
 
 addEventListener('resize', () => { computeLayout(); positionZones(); sync(); });
 addEventListener('mousemove', (e) => {
