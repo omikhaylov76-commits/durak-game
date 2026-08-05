@@ -380,8 +380,10 @@ var NET={mode:'off',ws:null,id:'',topic:'',code:'',started:false,peers:{},seat:-
   NET.ws=new WebSocket(proto+'//'+location.host+'/ws');
   NET.ws.onopen=function(){cb();};
   NET.ws.onmessage=function(ev){var m;try{m=JSON.parse(ev.data);}catch(_){return;}netMessage(m);};
-  NET.ws.onclose=function(){if(NET.mode!=='off'){toast('Соединение потеряно');NET.leave();}};
-  NET.ws.onerror=function(){};
+  NET.ws.onclose=function(){if(NET.mode!=='off'){toast('Соединение потеряно');NET.leave();}
+   $('#createBtn').disabled=false;$('#createBtn').textContent='Создать комнату';$('#netGoBtn').disabled=false;};
+  NET.ws.onerror=function(){toast('Ошибка подключения к серверу');
+   $('#createBtn').disabled=false;$('#createBtn').textContent='Создать комнату';$('#netGoBtn').disabled=false;};
  },
  send:function(m){if(NET.ws&&NET.ws.readyState===WebSocket.OPEN)NET.ws.send(JSON.stringify(m));},
  leave:function(){if(NET.ws){NET.send({t:'leave'});try{NET.ws.close();}catch(_){}}NET.ws=null;NET.mode='off';NET.started=false;NET.peers={};}};
@@ -529,11 +531,12 @@ function netMessage(m){
  if(m.t==='connected'){NET.id=m.id;return;}
  if(m.t==='room'){
   NET.code=m.code;NET.seat=m.seat||0;
+  $('#createBtn').disabled=false;$('#createBtn').textContent='Создать комнату';
   $('#roomBox').classList.remove('hidden');
   $('#roomCode').textContent=m.code;
   $('#netStartBtn').classList.remove('hidden');$('#netGoBtn').classList.add('hidden');
   $('#joinRow').classList.add('hidden');
-  $('#netHint').textContent='Сообщите код друзьям — они войдут по коду. Свободные места займут боты.';
+  $('#netHint').textContent='Сообщите код друзьям — они войдут по коду.';
   renderRoom();return;}
  if(m.t==='joined'){
   NET.code=m.code;NET.seat=m.seat;
@@ -940,15 +943,15 @@ $('#startBtn').onclick=function(){
  startGame(readOpts(),null);};
 $('#createBtn').onclick=function(){
  AU.init();initMusic();
- if(NET.mode!=='off')return;
+ if(NET.mode!=='off'){toast('Сначала нажмите «Отмена» в комнате');return;}
  $('#createBtn').disabled=true;$('#createBtn').textContent='Подключение…';
  NET.connect(function(){
   NET.mode='host';
   NET.send({t:'create', count:optV.count, deck:optV.deck, name:$('#myName').value||'Хост'});
-  setTimeout(function(){$('#createBtn').disabled=false;$('#createBtn').textContent='Создать комнату';},6000);});};
+ });};
 $('#joinBtn').onclick=function(){
  AU.init();initMusic();
- if(NET.mode!=='off')return;
+ if(NET.mode!=='off'){toast('Сначала нажмите «Отмена» в комнате');return;}
  $('#roomBox').classList.remove('hidden');
  $('#roomCode').textContent='';
  $('#joinRow').classList.remove('hidden');$('#netGoBtn').classList.remove('hidden');
@@ -964,6 +967,8 @@ $('#netGoBtn').onclick=function(){
   NET.send({t:'join', code:code, name:$('#myName').value||'Гость'});
   setTimeout(function(){$('#netGoBtn').disabled=false;},6000);});};
 $('#netCancelBtn').onclick=function(){NET.leave();
+ $('#createBtn').disabled=false;$('#createBtn').textContent='Создать комнату';
+ $('#netGoBtn').disabled=false;
  $('#roomBox').classList.add('hidden');$('#lobby').classList.remove('hidden');};
 $('#netStartBtn').onclick=function(){
  if(NET.mode!=='host')return;
