@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Дурак — тёплый вечер (сеть)</title>
+<style>
+:root{--ease:cubic-bezier(.22,.85,.26,1.08);--dur:320ms}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#24352c;font-family:Rubik,system-ui,sans-serif;user-select:none;-webkit-user-select:none}
+#bg{position:fixed;inset:-24px;z-index:0;background:radial-gradient(ellipse 58% 44% at 50% 42%, rgba(255,196,120,.14), rgba(255,184,107,0) 72%),radial-gradient(ellipse 130% 100% at 50% 46%, #4A6B5C 0%, #3A5A4C 48%, #2F4A3E 74%, #253B30 100%);transition:transform .5s ease-out}
+#lamp{position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 62% 46% at 50% 44%, rgba(255,196,120,.15), rgba(255,184,107,.05) 55%, transparent 78%)}
+#vignette{position:fixed;inset:0;z-index:2;pointer-events:none;background:radial-gradient(ellipse 95% 85% at 50% 46%, transparent 55%, rgba(10,16,11,.62) 100%)}
+#game{position:fixed;inset:0;z-index:3}
+#seats{position:absolute;inset:0;z-index:5;pointer-events:none}
+#cards{position:absolute;inset:0;z-index:7}
+#deckzone,#bitozone{position:absolute;inset:0;pointer-events:none;z-index:6}
+#deckstack,#bitostack{position:absolute;transform:translate(-50%,-50%);border-radius:8px;background:#5C3A2E center/cover}
+#deckstack{box-shadow:2px 2px 0 #4a2e24,4px 4px 0 #4a2e24,6px 6px 14px rgba(15,20,15,.7)}
+#bitostack{opacity:.55;filter:brightness(.85);box-shadow:0 14px 18px -6px rgba(15,20,15,.65)}
+#deckcount,#trumpchip{position:absolute;transform:translate(-50%,-50%)}
+#deckcount{min-width:36px;height:36px;border-radius:18px;padding:0 6px;display:flex;align-items:center;justify-content:center;background:#D8A86B;color:#241a10;font-weight:900;font-size:16px;border:2px solid rgba(60,40,20,.55);box-shadow:0 4px 10px -3px rgba(0,0,0,.7)}
+#trumpchip{min-width:40px;height:40px;border-radius:20px;display:flex;align-items:center;justify-content:center;background:rgba(20,26,20,.8);border:2px solid rgba(176,141,87,.55);box-shadow:0 4px 10px -3px rgba(0,0,0,.7);font-size:22px;font-weight:900}
+.card{position:absolute;left:0;top:0;will-change:transform;transform-origin:center;transition:transform var(--dur) var(--ease), width .28s ease, height .28s ease}
+.lift{width:100%;height:100%;transition:transform .2s var(--ease)}
+.card.hover .lift,.card.sel .lift{transform:translateY(-24px) scale(1.06)}
+.flip{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .28s cubic-bezier(.3,.9,.3,1)}
+.card.back .flip{transform:rotateY(180deg)}
+.face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:7px;overflow:hidden;box-shadow:0 12px 14px -6px rgba(15,20,15,.6),0 2px 4px rgba(15,20,15,.4)}
+.face.front{background:#F6EFE2}
+.face.backf{transform:rotateY(180deg);background:#5C3A2E}
+.card.dim .face{filter:brightness(.58) saturate(.75)}
+.card.playable{cursor:pointer}
+.card.playable .face.front{box-shadow:0 12px 14px -6px rgba(15,20,15,.6),0 0 0 2px rgba(255,207,107,.55)}
+.card.sel .face.front{box-shadow:0 0 0 3px #FFD98A,0 16px 20px -6px rgba(15,20,15,.7)}
+.card.target .face.front{box-shadow:0 0 0 3px #FFCF6B,0 12px 18px -6px rgba(15,20,15,.6);animation:pulse 1s infinite}
+@keyframes pulse{50%{filter:brightness(1.14)}}
+.card.shake .lift{animation:wobble .32s}
+@keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-4deg) translateX(-5px)}75%{transform:rotate(4deg) translateX(5px)}}
+.seat{position:absolute;transform:translate(-50%,-50%)}
+.seat.top{width:240px;height:252px}.seat.left,.seat.right{width:212px;height:250px}
+.fanrot{position:absolute}
+.fan2{position:absolute;left:50%;top:50%;width:236px;height:156px;transform:translate(-50%,-50%)}
+.fanrot.rotL .fan2{transform:translate(-50%,-50%) rotate(90deg)}
+.fanrot.rotR .fan2{transform:translate(-50%,-50%) rotate(-90deg)}
+.seat.top .fanrot{left:50%;top:0;width:236px;height:156px;margin-left:-118px}
+.seat.left .fanrot{left:42px;top:50%;width:156px;height:236px;margin-top:-118px}
+.seat.right .fanrot{right:42px;top:50%;width:156px;height:236px;margin-top:-118px}
+.mini2{position:absolute;left:50%;bottom:2px;width:96px;height:137px;transform-origin:50% 100%;border-radius:8px;background:var(--backbg) center/cover;border:1px solid rgba(176,141,87,.45);box-shadow:0 6px 10px -3px rgba(15,20,15,.6)}
+.seat .avatar{position:absolute;z-index:2;width:98px;height:98px;border-radius:50%;background-size:cover;border:3px solid rgba(176,141,87,.75);box-shadow:0 8px 18px -5px rgba(0,0,0,.75),0 0 0 4px rgba(20,26,20,.35)}
+.seat.top .avatar{left:50%;top:106px;transform:translateX(-50%)}
+.seat.left .avatar{left:42px;top:50%;transform:translate(-50%,-50%)}
+.seat.right .avatar{right:42px;top:50%;transform:translate(50%,-50%)}
+.seat .avatar .badge{position:absolute;top:-7px;right:-11px;min-width:28px;height:28px;padding:0 7px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:#D8A86B;color:#241a10;font-weight:900;font-size:15px;border:2px solid rgba(60,40,20,.55);box-shadow:0 4px 8px -2px rgba(15,20,15,.6);z-index:2}
+.seat .aname{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:rgba(16,22,17,.8);color:#F6EBD4;font-weight:800;font-size:13px;padding:2px 11px;border-radius:10px;white-space:nowrap;max-width:92px;overflow:hidden;text-overflow:ellipsis}
+.seat.turn .avatar{box-shadow:0 8px 18px -5px rgba(0,0,0,.75),0 0 0 4px rgba(255,184,107,.4),0 0 22px 4px rgba(255,184,107,.55)}
+.seat.out{opacity:.45;filter:grayscale(.6)}
+.seat .rolechip{position:absolute;font-size:12px;font-weight:800;color:#FFD9A0;background:rgba(20,26,20,.78);border:1px solid rgba(176,141,87,.4);border-radius:10px;padding:3px 10px;letter-spacing:.3px}
+.seat .rolechip.atk{background:linear-gradient(180deg,#E7B877,#B98A4E);color:#241a10;border:1px solid rgba(60,40,20,.5)}
+.seat .rolechip.def{background:linear-gradient(180deg,#DE8A63,#AE5A3C);color:#fff;border:1px solid rgba(60,40,20,.5)}
+.seat.top .rolechip{left:50%;top:212px;transform:translateX(-50%)}
+.seat.left .rolechip{left:42px;top:calc(50% + 58px);transform:translateX(-50%)}
+.seat.right .rolechip{right:42px;top:calc(50% + 58px);transform:translateX(50%)}
+#hud{position:absolute;top:14px;left:50%;transform:translateX(-50%);display:flex;gap:10px;align-items:center;z-index:20}
+#status{display:flex;align-items:center;gap:10px;padding:12px 24px;border-radius:18px;font-size:17px;white-space:nowrap;background:linear-gradient(180deg,rgba(46,35,52,.94),rgba(28,21,36,.94));border:1px solid rgba(255,184,107,.55);box-shadow:0 12px 32px -8px rgba(0,0,0,.75),0 0 0 4px rgba(255,184,107,.12),inset 0 1px 0 rgba(255,255,255,.08);backdrop-filter:blur(8px)}
+#status .who{color:#FFD9A0;font-weight:900}
+#status .act{color:#F2E7D0;font-weight:600}
+#timer{width:38px;height:38px;border-radius:50%;position:relative;display:none;background:conic-gradient(#FFB86B var(--p,100%), rgba(255,255,255,.14) 0)}
+#timer span{position:absolute;inset:5px;border-radius:50%;background:#1A1524;color:#FFD9A0;font-weight:900;font-size:13px;display:flex;align-items:center;justify-content:center}
+#toasts{position:absolute;top:19%;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;z-index:22;pointer-events:none}
+.toast{background:rgba(20,26,20,.88);border:1px solid rgba(255,184,107,.5);color:#FFE3B8;padding:10px 22px;border-radius:16px;font-weight:900;font-size:17px;animation:toast 2.2s forwards;box-shadow:0 10px 24px -8px rgba(0,0,0,.7)}
+@keyframes toast{0%{opacity:0;transform:translateY(14px) scale(.9)}12%{opacity:1;transform:translateY(0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-16px)}}
+#actions{position:absolute;left:50%;transform:translateX(-50%);display:flex;gap:12px;z-index:30}
+.btn{min-height:56px;padding:0 30px;border-radius:16px;border:1px solid rgba(60,40,20,.65);cursor:pointer;background:linear-gradient(180deg,#D8A86B,#A87C48);color:#2A1C10;font-weight:900;font-size:18px;box-shadow:0 8px 16px -6px rgba(15,20,15,.8);transition:transform .15s var(--ease),box-shadow .15s,filter .15s;font-family:Rubik,system-ui,sans-serif}
+.btn:hover{filter:brightness(1.07)}
+.btn:active{transform:translateY(2px) scale(.97)}
+.btn.warn{background:linear-gradient(180deg,#DE8A63,#AE5A3C);color:#fff}
+.btn.ghost{background:rgba(20,26,20,.6);color:#F2E7D0;border-color:rgba(176,141,87,.5)}
+.btn.big{width:100%;margin-top:18px}
+.overlay{position:fixed;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;background:rgba(10,14,10,.62);backdrop-filter:blur(8px);animation:fadeIn .25s ease}
+@keyframes fadeIn{0%{opacity:0}100%{opacity:1}}
+.overlay.hidden{display:none}
+.panel{background:linear-gradient(180deg,#2A2130,#1E1724);border:1px solid rgba(176,141,87,.45);border-radius:22px;padding:30px 36px;color:#F2E7D0;width:min(92vw,560px);max-height:92vh;overflow:auto;box-shadow:0 30px 60px -20px rgba(0,0,0,.85);animation:popIn .32s var(--ease)}
+@keyframes popIn{0%{opacity:0;transform:scale(.92) translateY(14px)}100%{opacity:1;transform:none}}
+.panel h1{font-size:44px;color:#FFD9A0;text-align:center;font-family:Georgia,serif}
+.panel .sub{text-align:center;color:#C9B8A0;margin:6px 0 18px;font-size:14px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:14px;margin:12px 0;font-weight:700}
+.seg{display:flex;gap:6px}
+.seg button{padding:9px 16px;border-radius:11px;border:1px solid rgba(176,141,87,.4);background:rgba(26,21,36,.5);color:#D9C9A8;font-weight:700;cursor:pointer;transition:all .15s var(--ease);font-family:Rubik,system-ui,sans-serif}
+.seg button.on{background:#D8A86B;color:#241a10;border-color:#D8A86B;transform:scale(1.05)}
+.check{display:flex;gap:10px;align-items:center;margin:14px 0;font-weight:700;cursor:pointer}
+.check input{width:20px;height:20px;accent-color:#D8A86B}
+.rowc{display:flex;gap:12px;justify-content:center;margin-top:20px;flex-wrap:wrap}
+.nameinp{background:rgba(26,21,36,.5);border:1px solid rgba(176,141,87,.4);color:#F2E7D0;border-radius:11px;padding:9px 12px;font-weight:700;font-size:15px;width:170px;outline:none;font-family:Rubik,system-ui,sans-serif}
+.codeinp{letter-spacing:4px;text-transform:uppercase;width:130px;text-align:center}
+.roomcode{font-size:40px;letter-spacing:10px;color:#FFD9A0;text-align:center;margin:8px 0}
+.hidden{display:none!important}
+@media(max-width:760px){
+ .panel{padding:22px 20px}.panel h1{font-size:34px}.btn{padding:0 20px;font-size:16px}
+ #status{font-size:14px;padding:10px 16px}
+ .seat.top{width:176px;height:190px}.seat.left,.seat.right{width:160px;height:190px}
+ .seat.top .fanrot{margin-left:-84px;width:168px;height:116px}
+ .seat.left .fanrot,.seat.right .fanrot{width:116px;height:168px;margin-top:-84px}
+ .seat.left .fanrot{left:32px}.seat.right .fanrot{right:32px}
+ .fan2{width:168px;height:116px}.mini2{width:67px;height:96px}
+ .seat .avatar{width:64px;height:64px}
+ .seat.top .avatar{top:72px}.seat.left .avatar{left:32px}.seat.right .avatar{right:32px}
+ .seat .aname{font-size:10px;bottom:5px;padding:1px 8px;max-width:58px}
+ .seat .avatar .badge{min-width:22px;height:22px;font-size:12px;top:-5px;right:-8px}
+ .seat.top .rolechip{top:142px}.seat.left .rolechip{top:calc(50% + 42px)}.seat.right .rolechip{top:calc(50% + 42px)}
+}
+</style>
+</head>
+<body>
+<div id="bg"></div><div id="lamp"></div><div id="vignette"></div>
+<div id="game">
+  <div id="seats"></div>
+  <div id="bitozone"><div id="bitostack"></div></div>
+  <div id="cards"></div>
+  <div id="deckzone"><div id="deckstack"></div><div id="deckcount">0</div><div id="trumpchip"></div></div>
+  <div id="hud"><div id="status">Подключение…</div><div id="timer"><span>30</span></div></div>
+  <div id="toasts"></div><div id="actions"></div>
+</div>
+<div id="lobby" class="overlay">
+  <div class="panel">
+    <h1>Дурак</h1>
+    <p class="sub">тёплый вечер, лампа и колода — садитесь к столу</p>
+    <div class="row"><span>Ваше имя</span><input id="myName" class="nameinp" value="Игрок" maxlength="12"></div>
+    <div class="row"><span>Игроки</span><div class="seg" id="optCount"><button data-v="2">2</button><button data-v="3" class="on">3</button><button data-v="4">4</button></div></div>
+    <div class="row"><span>Колода</span><div class="seg" id="optDeck"><button data-v="36" class="on">36</button><button data-v="52">52</button></div></div>
+    <div class="row"><span>Подкидывать</span><div class="seg" id="optThrow"><button data-v="all" class="on">все</button><button data-v="nb">соседи</button></div></div>
+    <label class="check"><input type="checkbox" id="optFirst5"> первый кон — максимум 5 пар</label>
+    <button id="startBtn" class="btn big">Сесть за стол (с ботами)</button>
+    <div class="rowc">
+      <button id="createBtn" class="btn ghost">Создать комнату</button>
+      <button id="joinBtn" class="btn ghost">Войти по коду</button>
+    </div>
+    <div id="roomBox" class="hidden">
+      <div class="roomcode" id="roomCode"></div>
+      <div id="roomSeats"></div>
+      <div id="joinRow" class="row hidden"><span>Код комнаты</span><input id="joinCode" class="nameinp codeinp" maxlength="6" placeholder="ABCDEF"></div>
+      <div id="netHint" class="sub"></div>
+      <div class="rowc">
+        <button id="netStartBtn" class="btn hidden">Начать партию</button>
+        <button id="netGoBtn" class="btn hidden">Войти</button>
+        <button id="netCancelBtn" class="btn ghost">Отмена</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="module">
+import { faceSVG, BACK_SVG, BACK_URI } from './cards.js';
+
+// ---- helpers ----
+const $ = (s) => document.querySelector(s);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const now = () => performance.now();
+
+// ---- WebSocket ----
+let ws = null;
+let NET = { mode: 'off', clientId: '', seat: -1, code: '' };
+
+function connect() {
+  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  ws = new WebSocket(`${proto}//${location.host}/ws`);
+  ws.onopen = () => $('#status').textContent = 'Подключено';
+  ws.onmessage = (ev) => {
+    const msg = JSON.parse(ev.data);
+    handleMessage(msg);
+  };
+  ws.onclose = () => { $('#status').textContent = 'Соединение потеряно'; setTimeout(connect, 2000); };
+  ws.onerror = () => {};
+}
+
+function send(msg) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify(msg)); }
+
+function handleMessage(msg) {
+  switch (msg.t) {
+    case 'connected':
+      NET.clientId = msg.id;
+      break;
+    case 'room':
+      NET.mode = 'host'; NET.code = msg.code; NET.seat = msg.seat;
+      $('#roomBox').classList.remove('hidden');
+      $('#roomCode').textContent = msg.code;
+      $('#netStartBtn').classList.remove('hidden');
+      $('#netGoBtn').classList.add('hidden');
+      $('#joinRow').classList.add('hidden');
+      $('#netHint').textContent = 'Сообщите код друзьям — они войдут по коду.';
+      break;
+    case 'joined':
+      NET.mode = 'guest'; NET.code = msg.code; NET.seat = msg.seat;
+      $('#roomBox').classList.remove('hidden');
+      $('#roomCode').textContent = msg.code;
+      $('#netGoBtn').classList.add('hidden');
+      $('#joinRow').classList.add('hidden');
+      $('#netHint').textContent = 'Вы в комнате. Ждём начала партии…';
+      break;
+    case 'state':
+      applyState(msg.state);
+      if (!$('#lobby').classList.contains('hidden')) $('#lobby').classList.add('hidden');
+      break;
+    case 'emoji':
+      showReaction(msg.e, msg.seat, msg.name);
+      break;
+    case 'error':
+      toast(msg.text);
+      break;
+  }
+}
+
+// ---- game state ----
+let G = { running: false, players: [], allCards: [], table: [], discardLen: 0, deckLen: 0, trumpSuit: null, trumpInDeck: false, trumpCardId: null, attackerIdx: 0, defenderIdx: -1, turnIdx: -1, wait: null, opts: {}, firstRound: true, over: undefined, version: 0 };
+let els = new Map();
+let L = null;
+
+function applyState(st) {
+  G.running = st.over === undefined;
+  G.players = st.players;
+  G.table = st.table;
+  G.discardLen = st.discardLen;
+  G.deckLen = st.deckLen;
+  G.trumpSuit = st.trumpSuit;
+  G.trumpInDeck = st.trumpInDeck;
+  G.trumpCardId = st.trumpCardId;
+  G.attackerIdx = st.attackerIdx;
+  G.defenderIdx = st.defenderIdx;
+  G.turnIdx = st.turnIdx;
+  G.wait = st.wait;
+  G.opts = st.opts;
+  G.firstRound = st.firstRound;
+  G.over = st.over;
+  G.version = st.version;
+  G.allCards = st.allCards;
+  computeLayout();
+  sync();
+  if (st.over !== undefined) showOver(st.over);
+}
+
+// ---- layout ----
+function computeLayout() {
+  const W = innerWidth, H = innerHeight, narrow = W < 760;
+  const handH = clamp(H * 0.20, 90, H * 0.24), handW = handH * 0.6404;
+  const tabH = clamp(H * 0.138, 70, handH * 0.82), tabW = tabH * 0.6404;
+  const cx = W / 2, cy = narrow ? H * 0.43 : H * 0.47;
+  const colGap = tabW * 1.62, rowGap = tabH * 1.34;
+  const slots = [];
+  for (let i = 0; i < 6; i++) {
+    const col = i % 3, row = (i / 3) | 0;
+    slots.push({ x: cx + (col - 1) * colGap - tabW * 0.13, y: cy + (row - 0.5) * rowGap });
+  }
+  const deck = narrow ? { x: W * 0.17, y: H * 0.24 } : { x: cx - colGap - tabW * 2.1, y: cy - tabH * 0.15 };
+  const n = Math.max(G.players.length, 2);
+  const posMap = n === 2 ? ['top'] : (n === 3 ? ['left', 'right'] : ['left', 'top', 'right']);
+  const seats = {};
+  for (let pi = 1; pi < n; pi++) {
+    const at = posMap[pi - 1];
+    seats[pi] = at === 'top' ? { x: cx, y: narrow ? H * 0.12 : H * 0.17, dir: 'h' }
+      : (at === 'left' ? { x: narrow ? W * 0.13 : W * 0.11, y: narrow ? H * 0.45 : H * 0.42, dir: 'v' }
+        : { x: narrow ? W * 0.87 : W * 0.89, y: narrow ? H * 0.45 : H * 0.42, dir: 'v' });
+  }
+  L = { W, H, narrow, handH, handW, tabH, tabW, slots, deck, bito: { x: W - deck.x, y: deck.y }, handY: H - handH * 0.5 - 16, seats,
+    actionsTop: clamp(Math.max(slots[3].y + tabH * 0.85 + 14, H - handH - 118), slots[3].y + tabH * 0.85 + 8, H - handH - 16 - 64) };
+}
+
+function handPositions() {
+  const hand = G.players.length ? (G.players[0].hand || []) : [];
+  const n = hand.length;
+  if (!n) return [];
+  const W = L.W, handW = L.handW, handH = L.handH, handY = L.handY;
+  let ov = n > 8 ? 0.58 : 0.45;
+  let w = Math.min(handW, W * 0.96 / (1 + (n - 1) * (1 - ov)));
+  const gap = w * 0.22;
+  let gaps = 0;
+  for (let i = 1; i < n; i++) if (hand[i].suit === G.trumpSuit && hand[i - 1].suit !== G.trumpSuit) gaps++;
+  const total = w * (1 + (n - 1) * (1 - ov)) + gaps * gap;
+  const x0 = (W - total) / 2 + w / 2;
+  const mid = (n - 1) / 2, step = Math.min(3, 16 / n);
+  const out = [];
+  let x = x0;
+  for (let i = 0; i < n; i++) {
+    if (i > 0) {
+      x += w * (1 - ov);
+      if (hand[i].suit === G.trumpSuit && hand[i - 1].suit !== G.trumpSuit) x += gap;
+    }
+    const d = i - mid;
+    out.push({ x, y: handY + Math.pow(Math.abs(d), 1.7) * (handH * 0.006), rot: clamp(d * step, -8, 8) });
+  }
+  return out;
+}
+
+// ---- card rendering ----
+function ensureEl(card) {
+  let el = els.get(card.id);
+  if (el) return el;
+  el = document.createElement('div');
+  el.className = 'card';
+  el.innerHTML = `<div class="lift"><div class="flip"><div class="face front">${faceSVG(card)}</div><div class="face backf">${BACK_SVG}</div></div></div>`;
+  el.addEventListener('click', (ev) => { ev.stopPropagation(); onCardClick(card); });
+  $('#cards').appendChild(el);
+  els.set(card.id, el);
+  return el;
+}
+
+function place(el, x, y, w, h, rot, z, back) {
+  el.style.width = w + 'px';
+  el.style.height = h + 'px';
+  el.style.transform = `translate(${x - w / 2}px,${y - h / 2}px) rotate(${rot || 0}deg)`;
+  el.dataset.baseZ = z;
+  el.style.zIndex = z;
+  el.classList.toggle('back', !!back);
+}
+
+function sync() {
+  if (!L || !G.players.length) return;
+  $('#deckcount').textContent = G.deckLen;
+  $('#deckstack').style.display = G.deckLen ? '' : 'none';
+  $('#deckcount').style.display = G.deckLen ? '' : 'none';
+  const tc = $('#trumpchip');
+  if (G.trumpSuit && !G.trumpInDeck) {
+    tc.style.display = '';
+    tc.style.color = (G.trumpSuit === '♥' || G.trumpSuit === '♦') ? '#FF8A75' : '#E8DCC4';
+    tc.textContent = G.trumpSuit;
+  } else { tc.style.display = 'none'; }
+  $('#bitostack').style.display = G.discardLen ? '' : 'none';
+
+  const hp = handPositions();
+  for (const card of G.allCards) {
+    const el = ensureEl(card);
+    let done = false;
+    // Trump card on deck
+    if (card.id === G.trumpCardId && G.trumpInDeck) {
+      place(el, L.deck.x, L.deck.y + L.tabH * 0.62, L.tabW, L.tabH, 90, 140, false);
+      done = true;
+    } else {
+      // My hand
+      const myHand = G.players[0]?.hand || [];
+      const hi = myHand.findIndex(c => c.id === card.id);
+      if (hi >= 0) {
+        const p = hp[hi];
+        if (p) place(el, p.x, p.y, L.handW, L.handH, p.rot, 500 + hi, false);
+        done = true;
+      } else {
+        // Table
+        for (let ti = 0; ti < G.table.length && !done; ti++) {
+          const e = G.table[ti];
+          const s = L.slots[ti];
+          if (e.attack.id === card.id) {
+            place(el, s.x, s.y, L.tabW, L.tabH, 0, 200 + ti * 2, false);
+            done = true;
+          } else if (e.defense && e.defense.id === card.id) {
+            place(el, s.x + L.tabW * 0.26, s.y + L.tabH * 0.16, L.tabW, L.tabH, 4.5, 201 + ti * 2, false);
+            done = true;
+          }
+        }
+      }
+    }
+    if (!done) el.style.display = 'none';
+    else el.style.display = '';
+  }
+  renderHandFlags();
+  renderSeats();
+  renderStatus();
+  renderActions();
+  positionZones();
+}
+
+function renderHandFlags() {
+  if (!G.players.length) return;
+  els.forEach(el => el.classList.remove('target'));
+  const hand = G.players[0]?.hand || [];
+  const w = G.wait;
+  const pend = (w && w.type === 'defend') ? (G.table.find(e => !e.defense)?.attack || null) : null;
+  for (const c of hand) {
+    const el = els.get(c.id);
+    if (!el) continue;
+    let play = false, dim = false;
+    if (w) {
+      if (w.type === 'attack') play = true;
+      else if (w.type === 'throw') { play = w.valid?.includes(c.id); dim = !play; }
+      else if (w.type === 'defend') { play = !!pend && pend.suit === c.suit ? c.rank > pend.rank : c.suit === G.trumpSuit; dim = !play; }
+    }
+    el.classList.toggle('playable', play);
+    el.classList.toggle('dim', dim);
+  }
+  if (pend) {
+    const pe = els.get(pend.id);
+    if (pe) pe.classList.add('target');
+  }
+}
+
+function renderSeats() {
+  const box = $('#seats');
+  box.innerHTML = '';
+  for (let i = 1; i < G.players.length; i++) {
+    const p = G.players[i];
+    const sp = L.seats[i];
+    if (!sp) continue;
+    const side = sp.dir === 'v', isL = side && sp.x < L.W / 2, isR = side && !isL;
+    const seat = document.createElement('div');
+    seat.className = 'seat ' + (side ? (isL ? 'left' : 'right') : 'top') + (G.turnIdx === i ? ' turn' : '') + (p.out ? ' out' : '');
+    seat.dataset.seat = i;
+    seat.style.left = sp.x + 'px';
+    seat.style.top = sp.y + 'px';
+    let role = '', rcls = 'rolechip';
+    if (p.out) role = '<span class="rolechip">вышел</span>';
+    else if (i === G.defenderIdx && G.table.length) { rcls += ' def'; role = `<span class="${rcls}">отбивается</span>`; }
+    else if (i === G.attackerIdx) { rcls += ' atk'; role = `<span class="${rcls}">ходит</span>`; }
+    const fanMinis = () => {
+      const shown = Math.max(1, Math.min(p.handSize || 0, 12));
+      const spread = Math.min(52, 14 + shown * 4);
+      const step = shown > 1 ? spread / (shown - 1) : 0;
+      const a0 = -spread / 2;
+      return Array.from({ length: shown }, (_, k) => `<i class="mini2" style="transform:translateX(-50%) rotate(${(a0 + k * step).toFixed(1)}deg)"></i>`).join('');
+    };
+    seat.innerHTML = `<div class="fanrot${isL ? ' rotL' : isR ? ' rotR' : ''}"><div class="fan2">${fanMinis()}</div></div>
+      <span class="avatar"><span class="badge">${p.handSize || 0}</span><span class="aname"></span></span>${role}`;
+    const nameEl = seat.querySelector('.aname');
+    if (nameEl) nameEl.textContent = p.name;
+    box.appendChild(seat);
+  }
+}
+
+function renderStatus() {
+  const el = $('#status');
+  let html = '';
+  if (G.players[0]?.out) html = '<span class="act">Вы вышли — наблюдаете</span>';
+  else if (G.wait) {
+    if (G.wait.type === 'defend') html = '<b class="who">Ваш ход</b><span class="act">отбивайтесь</span>';
+    else if (G.wait.type === 'throw') html = '<b class="who">Ваш ход</b><span class="act">подкиньте или пас</span>';
+    else html = '<b class="who">Ваш ход</b><span class="act">атакуйте</span>';
+  } else {
+    const ti = G.turnIdx;
+    const p = G.players[ti];
+    if (p) html = `<b class="who">${p.name}</b><span class="act">${ti === G.defenderIdx ? 'отбивается' : 'думает'}</span>`;
+  }
+  if (el.dataset.last !== html) {
+    el.dataset.last = html;
+    el.innerHTML = html;
+  }
+}
+
+function renderActions() {
+  const box = $('#actions');
+  box.innerHTML = '';
+  const w = G.wait;
+  if (!w) return;
+  if (w.type === 'defend') {
+    const b = document.createElement('button');
+    b.className = 'btn warn';
+    b.textContent = 'Беру';
+    b.onclick = () => send({ t: 'act', action: { kind: 'take' } });
+    box.appendChild(b);
+  }
+  if (w.type === 'throw') {
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.textContent = G.table.every(e => e.defense) ? 'Бито' : 'Пас';
+    b.onclick = () => send({ t: 'act', action: { kind: 'pass' } });
+    box.appendChild(b);
+  }
+}
+
+function positionZones() {
+  const tabW = L.tabW, tabH = L.tabH;
+  const st = $('#deckstack');
+  st.style.left = L.deck.x + 'px';
+  st.style.top = L.deck.y + 'px';
+  st.style.width = tabW + 'px';
+  st.style.height = tabH + 'px';
+  $('#deckcount').style.left = L.deck.x + 'px';
+  $('#deckcount').style.top = (L.deck.y - tabH * 0.5 - 10) + 'px';
+  $('#trumpchip').style.left = L.deck.x + 'px';
+  $('#trumpchip').style.top = (L.deck.y + tabH * 0.62) + 'px';
+  $('#bitostack').style.left = L.bito.x + 'px';
+  $('#bitostack').style.top = L.bito.y + 'px';
+  $('#bitostack').style.width = tabW + 'px';
+  $('#bitostack').style.height = tabH + 'px';
+  $('#actions').style.top = L.actionsTop + 'px';
+}
+
+function onCardClick(card) {
+  if (!G.running || !G.wait) return;
+  const myHand = G.players[0]?.hand || [];
+  if (!myHand.some(c => c.id === card.id)) return;
+  const w = G.wait;
+  if (w.type === 'defend') {
+    const pend = G.table.find(e => !e.defense)?.attack;
+    if (pend && (card.suit === pend.suit ? card.rank > pend.rank : card.suit === G.trumpSuit)) {
+      send({ t: 'act', action: { kind: 'play', cardId: card.id } });
+    } else {
+      const el = els.get(card.id);
+      if (el) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); }
+    }
+  } else {
+    if (w.valid?.includes(card.id)) {
+      send({ t: 'act', action: { kind: 'play', cardId: card.id } });
+    }
+  }
+}
+
+function showOver(fool) {
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  const panel = document.createElement('div');
+  panel.className = 'panel';
+  panel.style.textAlign = 'center';
+  if (fool === undefined || fool === null) {
+    panel.innerHTML = '<h2>Ничья!</h2><p class="sub">все вышли одновременно</p>';
+  } else if (fool === 0) {
+    panel.innerHTML = '<h2>Вы остались в дураках</h2><p class="sub">ну, с кем не бывает…</p>';
+  } else {
+    panel.innerHTML = `<h2>Дурак — ${G.players[fool]?.name || '?'}</h2><p class="sub">Вы вышли из партии сухим!</p>`;
+  }
+  const btn = document.createElement('button');
+  btn.className = 'btn big';
+  btn.textContent = 'В лобби';
+  btn.onclick = () => {
+    overlay.remove();
+    send({ t: 'leave' });
+    NET.mode = 'off';
+    $('#lobby').classList.remove('hidden');
+  };
+  panel.appendChild(btn);
+  overlay.appendChild(panel);
+  document.body.appendChild(overlay);
+}
+
+function toast(txt) {
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = txt;
+  $('#toasts').appendChild(t);
+  setTimeout(() => t.remove(), 2200);
+}
+
+function showReaction(e, seatIdx, name) {
+  if (!L) return;
+  let x, y;
+  if (seatIdx === 0) { x = L.W / 2; y = L.H * 0.70; }
+  else {
+    const sp = L.seats[seatIdx];
+    if (!sp) return;
+    x = sp.x; y = sp.y - 40;
+  }
+  const d = document.createElement('div');
+  d.style.cssText = `position:absolute;z-index:46;font-size:88px;pointer-events:none;transform:translate(-50%,-50%);text-shadow:0 8px 22px rgba(0,0,0,.55);left:${x}px;top:${y}px`;
+  d.textContent = e;
+  if (name) {
+    const n = document.createElement('span');
+    n.textContent = name;
+    n.style.cssText = 'position:absolute;left:50%;top:100%;transform:translateX(-50%);font:800 13px Rubik,system-ui;color:#FFE3B8;background:rgba(20,26,20,.8);padding:2px 10px;border-radius:9px;white-space:nowrap';
+    d.appendChild(n);
+  }
+  $('#game').appendChild(d);
+  setTimeout(() => d.remove(), 1850);
+}
+
+// ---- lobby ----
+$('#startBtn').onclick = () => {
+  NET.mode = 'off';
+  $('#lobby').classList.add('hidden');
+  send({ t: 'create', name: $('#myName').value || 'Вы', count: optV.count, deck: optV.deck, throwAll: optV.throwAll, first5: $('#optFirst5').checked });
+  setTimeout(() => send({ t: 'start' }), 200);
+};
+
+$('#createBtn').onclick = () => {
+  send({ t: 'create', name: $('#myName').value || 'Хост', count: optV.count, deck: optV.deck, throwAll: optV.throwAll, first5: $('#optFirst5').checked });
+};
+
+$('#joinBtn').onclick = () => {
+  $('#roomBox').classList.remove('hidden');
+  $('#roomCode').textContent = '';
+  $('#joinRow').classList.remove('hidden');
+  $('#netGoBtn').classList.remove('hidden');
+  $('#netStartBtn').classList.add('hidden');
+};
+
+$('#netGoBtn').onclick = () => {
+  const code = ($('#joinCode').value || '').trim().toUpperCase();
+  if (code.length < 5) { toast('Код — 6 символов'); return; }
+  send({ t: 'join', code, name: $('#myName').value || 'Гость' });
+};
+
+$('#netStartBtn').onclick = () => {
+  send({ t: 'start' });
+};
+
+$('#netCancelBtn').onclick = () => {
+  send({ t: 'leave' });
+  NET.mode = 'off';
+  $('#roomBox').classList.add('hidden');
+};
+
+const optV = { count: 3, deck: 36, throwAll: true };
+$('#optCount').querySelectorAll('button').forEach(b => b.onclick = () => { optV.count = +b.dataset.v; });
+$('#optDeck').querySelectorAll('button').forEach(b => b.onclick = () => { optV.deck = +b.dataset.v; });
+$('#optThrow').querySelectorAll('button').forEach(b => b.onclick = () => { optV.throwAll = b.dataset.v === 'all'; });
+
+addEventListener('resize', () => { computeLayout(); positionZones(); sync(); });
+addEventListener('mousemove', (e) => {
+  const dx = (e.clientX / innerWidth - .5) * 6;
+  const dy = (e.clientY / innerHeight - .5) * 6;
+  $('#bg').style.transform = `translate(${-dx}px,${-dy}px)`;
+});
+
+document.documentElement.style.setProperty('--backbg', BACK_URI);
+$('#deckstack').style.backgroundImage = BACK_URI;
+$('#bitostack').style.backgroundImage = BACK_URI;
+
+connect();
+</script>
+</body>
+</html>

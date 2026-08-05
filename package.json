@@ -1,0 +1,15 @@
+{
+  "name": "durak",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Карточная игра «Дурак» — сетевой режим с авторитетным сервером",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server/index.js",
+    "test": "node --test tests/",
+    "autoplay": "node scripts/autoplay.mjs"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  }
+}
