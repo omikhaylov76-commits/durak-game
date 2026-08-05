@@ -604,6 +604,10 @@ function discardHas(discard, card) {
 function sync(){ if(!L||!G.players.length)return;
  beat();
  if(NET.mode==='guest'&&!sync._dbg){sync._dbg=1;toast('🎴 Рендер · игроков:'+G.players.length+' · карт:'+G.allCards.length);}
+ // Hide zombie cards no longer in allCards
+ var seen = {};
+ for (var ci = 0; ci < G.allCards.length; ci++) seen[G.allCards[ci].id] = true;
+ els.forEach(function(el, id) { if (!seen[id]) el.style.display = 'none'; });
  $('#deckcount').textContent=G.deck.length;
  $('#deckstack').style.display=G.deck.length?'':'none';
  $('#deckcount').style.display=G.deck.length?'':'none';
@@ -619,7 +623,7 @@ function sync(){ if(!L||!G.players.length)return;
   var card=G.allCards[ci];var el=ensureEl(card);
   if(el.dataset.fading==='1')continue;
   var done=false;
-  if(card===G.trumpCard&&G.trumpInDeck){place(el,L.deck.x,L.deck.y+L.tabH*0.62,L.tabW,L.tabH,90,140,false);done=true;}
+  if(G.trumpCard&&G.trumpInDeck&&card.id===G.trumpCard.id){place(el,L.deck.x,L.deck.y+L.tabH*0.62,L.tabW,L.tabH,90,140,false);done=true;}
   else{
    var hi=cardIdx(G.players[0].hand, card);
    if(hi>=0){var p=hp[hi];place(el,p.x,p.y,L.handW,L.handH,p.rot,500+hi,false);done=true;}
