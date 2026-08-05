@@ -540,6 +540,7 @@ function netMessage(m){
   renderRoom();return;}
  if(m.t==='joined'){
   NET.code=m.code;NET.seat=m.seat;
+  $('#netGoBtn').disabled=false;
   $('#roomCode').textContent=m.code;
   $('#netGoBtn').classList.add('hidden');$('#joinRow').classList.add('hidden');
   $('#netHint').textContent='Вы в комнате (место '+m.seat+'). Ждём, пока хост начнёт партию…';return;}
@@ -551,7 +552,9 @@ function netMessage(m){
   delete NET.peers[m.seat];renderRoom();
   if(NET.started&&G.players[m.seat]){G.players[m.seat].net=null;G.players[m.seat].bot=true;sync();}
   return;}
- if(m.t==='error'){toast(m.text);return;}
+ if(m.t==='error'){toast(m.text);
+  $('#netGoBtn').disabled=false;$('#createBtn').disabled=false;$('#createBtn').textContent='Создать комнату';
+  return;}
  if(NET.mode==='host'){
   if(m.t==='act')netAct(m);
   else if(m.t==='emoji'){var n=G.players.length;if(n)showReaction(m.e,(m.seat+n)%n,G.players[(m.seat+n)%n]?G.players[(m.seat+n)%n].name:'');AU.play('emo');}
