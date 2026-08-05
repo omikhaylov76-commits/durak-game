@@ -506,6 +506,7 @@ function netPush(){ if(NET.mode!=='host'||!NET.started)return;if(pushRAF)return;
   for(var i=1;i<G.players.length;i++){
    if(!G.players[i].bot){
     NET.send({t:'state',seat:i,state:projectFor(i)});
+    if(!netPush._dbg){netPush._dbg=1;toast('📤 Шлю карты гостю (место '+i+')');}
    }
   }});}
 function projectFor(s){var n=G.players.length;var rot=function(i){return i<0?0:(i-s+n)%n;};
@@ -582,6 +583,7 @@ function netAct(m){var w=G.wait;if(!w)return;var pl=G.players[w.idx];if(!pl||!pl
   else{var c2=cardById(m.cardId);if(c2&&pl.hand.indexOf(c2)>=0&&w.valid.has(c2.id))resolveWait({card:c2});}}}
 function sync(){ if(!L||!G.players.length)return;
  beat();
+ if(NET.mode==='guest'&&!sync._dbg){sync._dbg=1;toast('🎴 Рендер · игроков:'+G.players.length+' · карт:'+G.allCards.length);}
  $('#deckcount').textContent=G.deck.length;
  $('#deckstack').style.display=G.deck.length?'':'none';
  $('#deckcount').style.display=G.deck.length?'':'none';
