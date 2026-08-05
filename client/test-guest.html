@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html><head><meta charset="UTF-8"><title>Guest Test</title></head>
+<body style="background:#1a1a2e;color:#fff;font:16px monospace;padding:20px">
+<h2>Guest State Monitor</h2>
+<div id="log"></div>
+<div id="cards" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:10px"></div>
+<script>
+const log = (s) => { const d=document.createElement('div'); d.textContent=s; document.getElementById('log').appendChild(d); };
+const ws = new WebSocket('wss://durak-game-production-6365.up.railway.app');
+ws.onopen = () => { log('Connected. Enter room code:'); };
+ws.onmessage = (ev) => {
+  const m = JSON.parse(ev.data);
+  log('← ' + m.t + (m.seat!==undefined?' seat='+m.seat:'') + (m.code?' code='+m.code:''));
+  if (m.t === 'joined') { log('✅ Joined! Seat: '+m.seat+'. Waiting for game start...'); }
+  if (m.t === 'start') { log('🎮 Game starting!'); }
+  if (m.t === 'state' && m.state) {
+    const st = m.state;
+    log('📦 State: players='+st.players.length+' hand='+(st.players[0]?st.players[0].hand.length:0)+' cards='+st.cards.length+' trump='+st.trumpSuit);
+    // Render cards
+    const box = document.getElementById('cards');
+    box.innerHTML = '<h3>Your cards ('+st.players[0].hand.length+'):</h3>';
+    st.players[0].hand.forEach(c => {
+      if (c && c.id) {
+        const el = document.createElement('div');
+        el.style.cssText = 'background:#f6efe2;color:#333;padding:8px 12px;border-radius:6px;font-weight:bold;border:2px solid #c9b48e';
+        el.textContent = c.id;
+        box.appendChild(el);
+      }
+    });
+    if (st.players[0].hand.length === 0) {
+      box.innerHTML += '<p style="color:red">⚠️ NO CARDS in hand!</p>';
+    }
+  }
+};
+ws.onerror = () => log('❌ WebSocket error');
+ws.onclose = () => log('❌ Disconnected');
+
+// Join room via prompt
+setTimeout(() => {
+  const code = prompt('Enter room code (5 chars):');
+  if (code) {
+    ws.send(JSON.stringify({t:'join', code:code.toUpperCase(), name:'Test'}));
+    log('→ join '+code.toUpperCase());
+  }
+}, 500);
+</script>
+</body></html>
