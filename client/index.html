@@ -139,6 +139,7 @@ html,body{height:100%;overflow:hidden;background:#24352c;font-family:Rubik,syste
     </div>
     <div id="roomBox" class="hidden">
       <div class="roomcode" id="roomCode"></div>
+      <div class="rowc"><button id="copyCodeBtn" class="btn ghost" style="font-size:14px;min-height:36px;padding:0 16px">📋 Копировать код</button></div>
       <div id="roomSeats"></div>
       <div id="joinRow" class="row hidden"><span>Код комнаты</span><input id="joinCode" class="nameinp codeinp" maxlength="6" placeholder="ABCDEF"></div>
       <div id="netHint" class="sub"></div>
@@ -158,6 +159,51 @@ const $ = (s) => document.querySelector(s);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 const now = () => performance.now();
+
+// ---- Audio (Web Audio API) ----
+const AU = { ctx: null, cardGain: null, noise: null,
+  init() {
+    if (this.ctx) return;
+    try {
+      const C = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+      this.cardGain = C.createGain();
+      this.cardGain.gain.value = 0.7;
+      this.cardGain.connect(C.destination);
+      const len = C.sampleRate * 2, b = C.createBuffer(1, len, C.sampleRate), d = b.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      this.noise = b;
+    } catch (_) { this.ctx = null; }
+  },
+  play(name) {
+    if (!this.ctx || !this.noise) return;
+    if (this.ctx.state === 'suspended') this.ctx.resume();
+    try {
+      const C = this.ctx, t = C.currentTime, g = this.cardGain, self = this;
+      const noise = (dur, ft, fq, vol) => {
+        const s = C.createBufferSource(); s.buffer = self.noise;
+        const fl = C.createBiquadFilter(); fl.type = ft; fl.frequency.value = fq;
+        const gg = C.createGain(); gg.gain.setValueAtTime(vol, t);
+        gg.gain.exponentialRampToValueAtTime(.001, t + dur);
+        s.connect(fl); fl.connect(gg); gg.connect(g); s.start(t); s.stop(t + dur + .05);
+      };
+      const tone = (f0, f1, dur, vol) => {
+        const o = C.createOscillator(); o.type = 'sine';
+        o.frequency.setValueAtTime(f0, t);
+        o.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), t + dur);
+        const gg = C.createGain(); gg.gain.setValueAtTime(vol, t);
+        gg.gain.exponentialRampToValueAtTime(.001, t + dur);
+        o.connect(gg); gg.connect(g); o.start(t); o.stop(t + dur + .05);
+      };
+      const p = 0.95 + Math.random() * 0.1;
+      if (name === 'place') { noise(.09, 'bandpass', 1800 * p, .5); tone(220 * p, 120, .07, .22); }
+      else if (name === 'draw') { noise(.12, 'highpass', 2500 * p, .2); }
+      else if (name === 'swish') { noise(.3, 'lowpass', 1200 * p, .5); }
+      else if (name === 'take') { noise(.25, 'lowpass', 800, .45); tone(300, 180, .2, .14); }
+      else if (name === 'win') { tone(523, 523, .15, .3); setTimeout(() => tone(659, 659, .2, .3), 150); setTimeout(() => tone(784, 784, .35, .3), 320); }
+      else if (name === 'lose') { tone(300, 200, .3, .3); setTimeout(() => tone(220, 150, .45, .3), 260); }
+    } catch (_) {}
+  }
+};
 
 // ---- WebSocket ----
 let ws = null;
@@ -490,6 +536,7 @@ function onCardClick(card) {
   if (w.type === 'defend') {
     const pend = G.table.find(e => !e.defense)?.attack;
     if (pend && (card.suit === pend.suit ? card.rank > pend.rank : card.suit === G.trumpSuit)) {
+      AU.play('place');
       send({ t: 'act', action: { kind: 'play', cardId: card.id } });
     } else {
       const el = els.get(card.id);
@@ -497,12 +544,14 @@ function onCardClick(card) {
     }
   } else {
     if (w.valid?.includes(card.id)) {
+      AU.play('place');
       send({ t: 'act', action: { kind: 'play', cardId: card.id } });
     }
   }
 }
 
 function showOver(fool) {
+  if (fool === 0) AU.play('lose'); else AU.play('win');
   const overlay = document.createElement('div');
   overlay.className = 'overlay';
   const panel = document.createElement('div');
@@ -569,6 +618,7 @@ function showReaction(e, seatIdx, name) {
 
 // ---- lobby ----
 $('#startBtn').onclick = () => {
+  AU.init();
   NET.mode = 'off';
   $('#status').textContent = 'Запуск игры…';
   send({ t: 'create', name: $('#myName').value || 'Вы', count: optV.count, deck: optV.deck, throwAll: optV.throwAll, first5: $('#optFirst5').checked });
@@ -576,10 +626,12 @@ $('#startBtn').onclick = () => {
 };
 
 $('#createBtn').onclick = () => {
+  AU.init();
   send({ t: 'create', name: $('#myName').value || 'Хост', count: optV.count, deck: optV.deck, throwAll: optV.throwAll, first5: $('#optFirst5').checked });
 };
 
 $('#joinBtn').onclick = () => {
+  AU.init();
   $('#roomBox').classList.remove('hidden');
   $('#roomCode').textContent = '';
   $('#joinRow').classList.remove('hidden');
@@ -602,6 +654,13 @@ $('#netCancelBtn').onclick = () => {
   send({ t: 'leave' });
   NET.mode = 'off';
   $('#roomBox').classList.add('hidden');
+};
+
+$('#copyCodeBtn').onclick = () => {
+  const code = $('#roomCode').textContent;
+  if (code && navigator.clipboard) {
+    navigator.clipboard.writeText(code).then(() => toast('Код скопирован!'));
+  }
 };
 
 const optV = { count: 3, deck: 36, throwAll: true };
