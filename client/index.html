@@ -219,7 +219,7 @@ input[type=range]{width:170px;accent-color:#D8A86B}
     <div id="roomBox" class="hidden">
       <div class="roomcode" id="roomCode"></div>
       <div id="roomSeats"></div>
-      <div id="joinRow" class="row hidden"><span>Код комнаты</span><input id="joinCode" class="nameinp codeinp" maxlength="5" placeholder="ABCDE"></div>
+      <div id="joinRow" class="row hidden"><span>Код комнаты</span><input id="joinCode" class="nameinp codeinp" maxlength="6" placeholder="ABCDEF"></div>
       <p id="netHint" class="sub"></p>
       <p class="netnote">Игра по сети: отправьте ссылку на эту страницу ребёнку или друзьям, создайте комнату и продиктуйте код — и вы за одним столом.</p>
       <div class="rowc">
@@ -959,11 +959,11 @@ $('#joinBtn').onclick=function(){
  $('#roomCode').textContent='';
  $('#joinRow').classList.remove('hidden');$('#netGoBtn').classList.remove('hidden');
  $('#netStartBtn').classList.add('hidden');
- $('#netHint').textContent='Введите код комнаты из 6 символов.';
+ $('#netHint').textContent='Введите код комнаты из 5 символов.';
  $('#roomSeats').innerHTML='';};
 $('#netGoBtn').onclick=function(){
  var code=($('#joinCode').value||'').trim().toUpperCase();
- if(code.length<5){toast('Код — 6 символов');return;}
+ if(code.length<5){toast('Код — 5 символов');return;}
  $('#netGoBtn').disabled=true;
  NET.connect(function(){
   NET.mode='guest';

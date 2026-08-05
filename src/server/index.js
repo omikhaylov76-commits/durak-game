@@ -146,8 +146,8 @@ wss.on('connection', (ws) => {
 function generateCode() {
   const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
   let code = '';
-  const bytes = crypto.randomBytes(6);
-  for (let i = 0; i < 6; i++) code += chars[bytes[i] % chars.length];
+  const bytes = crypto.randomBytes(5);
+  for (let i = 0; i < 5; i++) code += chars[bytes[i] % chars.length];
   return code;
 }
 
