@@ -224,7 +224,7 @@ input[type=range]{width:170px;accent-color:#D8A86B}
       <p class="netnote">Игра по сети: отправьте ссылку на эту страницу ребёнку или друзьям, создайте комнату и продиктуйте код — и вы за одним столом.</p>
       <div class="rowc">
         <button id="netStartBtn" class="btn hidden">Начать партию</button>
-        <button id="netGoBtn" class="btn hidden">Войти</button>
+        <button id="netGoBtn" class="btn big hidden">Войти в комнату</button>
         <button id="netCancelBtn" class="btn ghost">Отмена</button>
       </div>
     </div>
@@ -959,8 +959,11 @@ $('#joinBtn').onclick=function(){
  $('#roomCode').textContent='';
  $('#joinRow').classList.remove('hidden');$('#netGoBtn').classList.remove('hidden');
  $('#netStartBtn').classList.add('hidden');
- $('#netHint').textContent='Введите код комнаты из 5 символов.';
- $('#roomSeats').innerHTML='';};
+ $('#netHint').textContent='Введите код комнаты из 5 символов и нажмите Войти.';
+ $('#roomSeats').innerHTML='';
+ setTimeout(function(){$('#joinCode').focus();},200);};
+// Enter key in code input = click "Войти"
+$('#joinCode').onkeydown=function(ev){if(ev.key==='Enter')$('#netGoBtn').click();};
 $('#netGoBtn').onclick=function(){
  var code=($('#joinCode').value||'').trim().toUpperCase();
  if(code.length<5){toast('Код — 5 символов');return;}
