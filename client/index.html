@@ -664,9 +664,18 @@ $('#copyCodeBtn').onclick = () => {
 };
 
 const optV = { count: 3, deck: 36, throwAll: true };
-$('#optCount').querySelectorAll('button').forEach(b => b.onclick = () => { optV.count = +b.dataset.v; });
-$('#optDeck').querySelectorAll('button').forEach(b => b.onclick = () => { optV.deck = +b.dataset.v; });
-$('#optThrow').querySelectorAll('button').forEach(b => b.onclick = () => { optV.throwAll = b.dataset.v === 'all'; });
+$('#optCount').querySelectorAll('button').forEach(b => b.onclick = () => {
+  optV.count = +b.dataset.v;
+  $('#optCount').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+});
+$('#optDeck').querySelectorAll('button').forEach(b => b.onclick = () => {
+  optV.deck = +b.dataset.v;
+  $('#optDeck').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+});
+$('#optThrow').querySelectorAll('button').forEach(b => b.onclick = () => {
+  optV.throwAll = b.dataset.v === 'all';
+  $('#optThrow').querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+});
 
 // Emoji panel
 const EMOJIS = ['😂','😡','🤔','😱','👍','👋','😴','🎉'];
