@@ -581,6 +581,26 @@ function netAct(m){var w=G.wait;if(!w)return;var pl=G.players[w.idx];if(!pl||!pl
  else{
   if(m.kind==='pass')resolveWait(null);
   else{var c2=cardById(m.cardId);if(c2&&pl.hand.indexOf(c2)>=0&&w.valid.has(c2.id))resolveWait({card:c2});}}}
+function cardIdx(arr, card) {
+  for (var k = 0; k < arr.length; k++) {
+    if (arr[k] && arr[k].id === card.id) return k;
+  }
+  return -1;
+}
+function tableHas(table, card) {
+  for (var k = 0; k < table.length; k++) {
+    var e = table[k];
+    if ((e.attack && e.attack.id === card.id) || (e.defense && e.defense.id === card.id)) return true;
+  }
+  return false;
+}
+function discardHas(discard, card) {
+  for (var k = 0; k < discard.length; k++) {
+    if (discard[k] && discard[k].id === card.id) return k;
+  }
+  return -1;
+}
+
 function sync(){ if(!L||!G.players.length)return;
  beat();
  if(NET.mode==='guest'&&!sync._dbg){sync._dbg=1;toast('🎴 Рендер · игроков:'+G.players.length+' · карт:'+G.allCards.length);}
@@ -601,13 +621,13 @@ function sync(){ if(!L||!G.players.length)return;
   var done=false;
   if(card===G.trumpCard&&G.trumpInDeck){place(el,L.deck.x,L.deck.y+L.tabH*0.62,L.tabW,L.tabH,90,140,false);done=true;}
   else{
-   var hi=G.players[0].hand.indexOf(card);
+   var hi=cardIdx(G.players[0].hand, card);
    if(hi>=0){var p=hp[hi];place(el,p.x,p.y,L.handW,L.handH,p.rot,500+hi,false);done=true;}
    else{
     for(var ti=0;ti<G.table.length&&!done;ti++){var e=G.table[ti];
-     if(e.attack===card){var s1=L.slots[ti];place(el,s1.x,s1.y,L.tabW,L.tabH,0,200+ti*2,false);done=true;}
-     else if(e.defense===card){var s2=L.slots[ti];place(el,s2.x+L.tabW*0.26,s2.y+L.tabH*0.16,L.tabW,L.tabH,4.5,201+ti*2,false);done=true;}}
-    var di=G.discard.indexOf(card);
+     if(e.attack.id===card.id){var s1=L.slots[ti];place(el,s1.x,s1.y,L.tabW,L.tabH,0,200+ti*2,false);done=true;}
+     else if(e.defense&&e.defense.id===card.id){var s2=L.slots[ti];place(el,s2.x+L.tabW*0.26,s2.y+L.tabH*0.16,L.tabW,L.tabH,4.5,201+ti*2,false);done=true;}}
+    var di=discardHas(G.discard, card);
     if(!done&&di>=0&&G.discard.length-di<=8){place(el,L.bito.x+((di*7)%13)-6,L.bito.y+((di*5)%9)-4,L.tabW,L.tabH,(di*13)%21-10,120+di,false);done=true;}}}
   if(!done)el.style.display='none';else el.style.display='';}
  renderHandFlags();renderSeats();renderActions();renderStatus();positionZones();netPush();}
@@ -711,8 +731,8 @@ function cancelWait(){var w=G.wait;if(w){G.wait=null;stopTimer();if(NET.mode!=='
 function onCardClick(card){
  if(!G.running&&NET.mode!=='guest')return;
  if(now()<G.lockUntil)return;
- for(var i=0;i<G.table.length;i++)if(G.table[i].attack===card||G.table[i].defense===card)return;
- if(G.discard.indexOf(card)>=0)return;
+ for(var i=0;i<G.table.length;i++)if((G.table[i].attack&&G.table[i].attack.id===card.id)||(G.table[i].defense&&G.table[i].defense.id===card.id))return;
+ if(discardHas(G.discard,card)>=0)return;
  var w=G.wait;
  if(!w||w.idx!==0){shake(card);return;}
  if(w.type==='defend'){
