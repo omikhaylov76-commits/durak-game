@@ -124,18 +124,21 @@ export class GameRoom {
     const n = this.players.length;
     const rot = (i) => (i - forSeat + n) % n;
 
-    const players = this.players.map((src, i) => {
-      const seatIdx = rot(i);
-      const isMe = seatIdx === 0;
-      return {
+    // Rotate so the requesting player is always at index 0
+    const players = [];
+    for (let k = 0; k < n; k++) {
+      const srcIdx = (forSeat + k) % n;
+      const src = this.players[srcIdx];
+      const isMe = k === 0;
+      players.push({
         name: src.name,
         out: src.out,
         handSize: src.hand.length,
         hand: isMe ? src.hand.map(c => ({ id: c.id, suit: c.suit, rank: c.rank })) : [],
         bot: src.bot,
-        seat: seatIdx,
-      };
-    });
+        seat: k,
+      });
+    }
 
     // Collect all cards this seat can see for identity mapping in the client
     const allCards = [];
@@ -202,6 +205,7 @@ export class GameRoom {
     if (this.wait && !this.players[this.wait.idx]?.bot) {
       this.wait.deadline = Date.now() + 30000;
       this.timer = setTimeout(() => this._autoResolve(), 30000);
+      this._changed();
     }
   }
 
@@ -347,6 +351,7 @@ export class GameRoom {
   }
 
   async _gameStep() {
+    try {
     if (!this.running) return;
     this.wait = null;
 
@@ -381,6 +386,11 @@ export class GameRoom {
     this._applyBito();
     this._changed();
     this._roundDone();
+    } catch (e) {
+      console.error('_gameStep error:', e.message);
+      this.running = false;
+      this._changed();
+    }
   }
 
   _roundDone() {

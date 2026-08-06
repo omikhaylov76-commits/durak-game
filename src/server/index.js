@@ -143,6 +143,8 @@ wss.on('connection', (ws) => {
         if (!room || info.seat !== 0) break;
         if (room.running) break;
         try {
+          // Set onChange BEFORE start so initial state broadcasts work
+          room._onChange = () => broadcastState(room);
           // Fill remaining seats with bots
           for (let i = room.players.length; i < room.opts.count; i++) {
             room.players.push({
@@ -155,7 +157,6 @@ wss.on('connection', (ws) => {
             });
           }
           room.start(room.players);
-          room._onChange = () => broadcastState(room);
           broadcast(room, { t: 'gameStarted' });
           broadcastState(room);
         } catch (e) {
