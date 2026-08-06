@@ -495,10 +495,7 @@ function showReaction(e,seatIdx,name){ if(!L)return;var x,y;
  d.innerHTML=e+(name?'<span class="rname">'+name+'</span>':'');
  d.style.left=x+'px';d.style.top=y+'px';$('#game').appendChild(d);
  setTimeout(function(){d.remove();},1850);}
-function botReaction(){ if(!G.players.length||Math.random()>0.4)return;
- var seats=[];for(var i=1;i<G.players.length;i++)if(!G.players[i].out)seats.push(i);
- if(!seats.length)return;var s=seats[(Math.random()*seats.length)|0];
- showReaction(EMOJIS[(Math.random()*EMOJIS.length)|0],s,G.players[s].name);}
+function botReaction(){ return; /* disabled */ }
 var pushRAF=0;
 function netPush(){ if(NET.mode!=='host'||!NET.started)return;if(pushRAF)return;
  pushRAF=requestAnimationFrame(function(){pushRAF=0;
@@ -506,7 +503,6 @@ function netPush(){ if(NET.mode!=='host'||!NET.started)return;if(pushRAF)return;
   for(var i=1;i<G.players.length;i++){
    if(!G.players[i].bot){
     NET.send({t:'state',seat:i,state:projectFor(i)});
-    if(!netPush._dbg){netPush._dbg=1;toast('📤 Шлю карты гостю (место '+i+')');}
    }
   }});}
 function projectFor(s){var n=G.players.length;var rot=function(i){return i<0?0:(i-s+n)%n;};
@@ -532,8 +528,7 @@ function applyState(st){G.players=st.players;G.table=st.table;G.discard=st.disca
  G.running=st.over===undefined;
  if(!$('#lobby').classList.contains('hidden'))$('#lobby').classList.add('hidden');
  computeLayout();sync();
- if(st.over!==undefined)showOver(st.over);
- if(NET.mode==='guest')toast('Ход · карт:'+(G.players.length?G.players[0].hand.length:0)+' · '+G.trumpSuit);}
+ if(st.over!==undefined)showOver(st.over);}
 function netMessage(m){
  if(m.t==='connected'){NET.id=m.id;return;}
  if(m.t==='room'){
@@ -567,8 +562,7 @@ function netMessage(m){
   else if(m.t==='emoji'){var n=G.players.length;if(n)showReaction(m.e,(m.seat+n)%n,G.players[(m.seat+n)%n]?G.players[(m.seat+n)%n].name:'');AU.play('emo');}
   else if(m.t==='emo'){var n=G.players.length;if(n)showReaction(m.e,(m.seat+n)%n,G.players[(m.seat+n)%n]?G.players[(m.seat+n)%n].name:'');AU.play('emo');}
  }else if(NET.mode==='guest'){
-  if(m.t==='state'&&m.seat===NET.seat)applyState(m.state);
-   else if(m.t==='state')toast('Чужой ход (место '+m.seat+', я '+NET.seat+')');
+  if(m.t==='state'){if(m.seat===NET.seat)applyState(m.state);}
   else if(m.t==='emoji'){var n2=G.players.length;if(n2)showReaction(m.e,(m.seat-NET.seat+n2)%n2,G.players[(m.seat-NET.seat+n2)%n2]?G.players[(m.seat-NET.seat+n2)%n2].name:'');AU.play('emo');}
   else if(m.t==='emo'){var n2=G.players.length;if(n2)showReaction(m.e,(m.seat-NET.seat+n2)%n2,G.players[(m.seat-NET.seat+n2)%n2]?G.players[(m.seat-NET.seat+n2)%n2].name:'');AU.play('emo');}
   else if(m.t==='start'){}
@@ -603,7 +597,6 @@ function discardHas(discard, card) {
 
 function sync(){ if(!L||!G.players.length)return;
  beat();
- if(NET.mode==='guest'&&!sync._dbg){sync._dbg=1;toast('🎴 Рендер · игроков:'+G.players.length+' · карт:'+G.allCards.length);}
  // Hide zombie cards no longer in allCards
  var seen = {};
  for (var ci = 0; ci < G.allCards.length; ci++) seen[G.allCards[ci].id] = true;
